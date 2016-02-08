@@ -37,15 +37,24 @@ type ReadSeekCloser interface {
 }
 
 func (fs *FileSystem) Open(uri string) (ReadSeekCloser, error) {
+	fsTranslator, err := fser.New(uri)
+	if err != nil {
+		return nil, fmt.Errorf("uri %q, creating a uriTofs path resolver, got err %v", uri, err)
+	}
+
 	cache, err := fs.loadCache()
 	if err != nil {
 		return nil, err
 	}
 
-	if retr, ok := cache[uri]; ok {
+	cacheKey := fsTranslator.Path()
+	if retr, ok := cache[cacheKey]; ok {
 		log.Printf("cache hit for %q, %+v\n", uri, retr)
-		retr.Open()
-		return retr, nil
+		err := retr.Open()
+		if err == nil {
+			return retr, nil
+		}
+		log.Printf("\033[91mInvalidated cache hit for uri %q, path %q\033[00m so refreshing the cache\n", uri, cacheKey)
 	}
 
 	resp, err := http.Get(uri)
@@ -55,11 +64,6 @@ func (fs *FileSystem) Open(uri string) (ReadSeekCloser, error) {
 
 	if resp.Close && resp.Body != nil {
 		defer resp.Body.Close()
-	}
-
-	fsTranslator, err := fser.New(uri)
-	if err != nil {
-		return nil, fmt.Errorf("uri %q, creating a uriTofs path resolver, got err %v", uri, err)
 	}
 
 	dirpath := fsTranslator.Dirname()
@@ -106,10 +110,10 @@ func (fs *FileSystem) Open(uri string) (ReadSeekCloser, error) {
 		newCache[k] = v
 	}
 
-	newCache[f.uri] = f
+	newCache[cacheKey] = f
 
 	_ = fs.storeCache(newCache)
-	fmt.Println("cache", newCache)
+	// fmt.Println("cache", newCache)
 
 	return f, nil
 }

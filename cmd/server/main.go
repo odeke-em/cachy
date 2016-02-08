@@ -54,7 +54,7 @@ func Cache(w http.ResponseWriter, r *http.Request) {
 	}
 
 	n, err := io.Copy(w, rcs)
-	log.Printf("%v bytes written for uri %q err %v\n", n, uri, err)
+	log.Printf("%v bytes sent out for uri %q err %v\n", n, uri, err)
 	_ = rcs.Close()
 }
 
