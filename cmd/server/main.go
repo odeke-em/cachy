@@ -67,6 +67,8 @@ func main() {
 	var server http.Server
 	server.Addr = envGetOrAlternatives(EnvCachyServerAddress, ":8080")
 
+	log.Printf("cachy server running on %q\n", server.Addr)
+
 	http.HandleFunc("/", Cache)
 	http.HandleFunc("/cache", Cache)
 

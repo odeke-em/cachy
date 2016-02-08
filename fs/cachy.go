@@ -43,7 +43,7 @@ func (fs *FileSystem) Open(uri string) (ReadSeekCloser, error) {
 	}
 
 	if retr, ok := cache[uri]; ok {
-		log.Printf("cache hit for %q\n", uri, retr)
+		log.Printf("cache hit for %q, %+v\n", uri, retr)
 		retr.Open()
 		return retr, nil
 	}
