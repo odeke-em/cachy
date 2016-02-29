@@ -37,6 +37,7 @@ type ReadSeekCloser interface {
 }
 
 func (fs *FileSystem) Open(uri string) (ReadSeekCloser, error) {
+	uri = strings.Trim(uri, "/")
 	fsTranslator, err := fser.New(uri)
 	if err != nil {
 		return nil, fmt.Errorf("uri %q, creating a uriTofs path resolver, got err %v", uri, err)
@@ -67,14 +68,16 @@ func (fs *FileSystem) Open(uri string) (ReadSeekCloser, error) {
 	}
 
 	dirpath := fsTranslator.Dirname()
+	fullDirpath := filepath.Clean(filepath.Join(fs.root, dirpath))
 
 	// Commit it to memory
-	err = os.MkdirAll(dirpath, 0755)
+	err = os.MkdirAll(fullDirpath, 0755)
 	if err != nil {
 		return nil, fmt.Errorf("mkdirAll: err %v; path %q", err, dirpath)
 	}
 
 	fullOutpath := filepath.Clean(filepath.Join(fs.root, fsTranslator.Path()))
+
 	osF, err := os.Create(fullOutpath)
 	if err != nil {
 		return nil, fmt.Errorf("err %v; creating outpath %q for uri %q", err, fullOutpath, uri)
