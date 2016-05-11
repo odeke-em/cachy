@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	cachyfs "github.com/odeke-em/cachy/fs"
 )
@@ -45,7 +46,12 @@ func Cache(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uri := r.PostForm.Get("uri")
+	uri := strings.TrimSpace(r.PostForm.Get("uri"))
+	if uri == "" {
+		http.Error(w, "'uri' expected in postForm", http.StatusBadRequest)
+		return
+	}
+
 	log.Println("uri", uri, r.PostForm)
 	rcs, err := fs.Open(uri)
 	if err != nil {
@@ -75,7 +81,13 @@ func main() {
 	certFilepath := envGetOrAlternatives(EnvCachyCertFile, "cachy.cert")
 	keyFilepath := envGetOrAlternatives(EnvCachyKeyFile, "cachy.key")
 
-	if err := server.ListenAndServeTLS(certFilepath, keyFilepath); err != nil {
-		log.Printf("servingTLS: %v\n", err)
+	if envGetOrAlternatives("http1") != "" {
+		if err := server.ListenAndServe(); err != nil {
+			log.Printf("serving http: %v\n", err)
+		}
+	} else {
+		if err := server.ListenAndServeTLS(certFilepath, keyFilepath); err != nil {
+			log.Printf("servingTLS: %v\n", err)
+		}
 	}
 }
